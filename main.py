@@ -5,6 +5,9 @@ from src.data_loader import filter_data_by_date
 from src.data_loader import prepare_sample_for_llm
 from src.llm_backtester import run_llm_preliminary_backtest
 from src.backtest_engine import run_python_backtest
+from src.report_generator import save_trade_report
+from src.report_generator import save_json_report
+from src.evaluator import create_evaluation_report
 
 
 def main():
@@ -56,7 +59,7 @@ def main():
         "to",
         strategy_config["to_date"]
     )
-    print("For Day 2 test, only first 10 rows will be used for both LLM and Python.")
+    print("For Day 3 test, only first 10 rows will be used for both LLM and Python.")
 
     if len(filtered_df) == 0:
         print("No historical data found for selected date range.")
@@ -87,9 +90,47 @@ def main():
     print("=====================================")
     print(python_summary)
 
-    print("\nDay 2 run completed.")
-    print("LLM and Python both used the same 10 rows.")
-    print("Python result is the deterministic reference result for these 10 rows.")
+    print("\nStep 7: Creating evaluation report...")
+    evaluation_report = create_evaluation_report(
+        ai_preliminary_result,
+        python_summary
+    )
+
+    print("\nEvaluation Report")
+    print("=================")
+    print(evaluation_report)
+
+    print("\nStep 8: Saving reports...")
+
+    trade_report_path = save_trade_report(
+        trades,
+        "results/trade_report.csv"
+    )
+
+    summary_report_path = save_json_report(
+        python_summary,
+        "results/summary_report.json"
+    )
+
+    ai_preliminary_report_path = save_json_report(
+        ai_preliminary_result,
+        "results/ai_preliminary_report.json"
+    )
+
+    evaluation_report_path = save_json_report(
+        evaluation_report,
+        "results/evaluation_report.json"
+    )
+
+    print("\nReports Generated")
+    print("=================")
+    print("Trade report:", trade_report_path)
+    print("Summary report:", summary_report_path)
+    print("AI preliminary report:", ai_preliminary_report_path)
+    print("Evaluation report:", evaluation_report_path)
+
+    print("\nMVP Day 3 completed successfully.")
+    print("LLM preliminary result was evaluated against Python deterministic result.")
 
 
 if __name__ == "__main__":
