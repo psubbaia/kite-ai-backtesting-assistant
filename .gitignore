@@ -2,5 +2,6 @@ venv/
 .env
 __pycache__/
 *.pyc
-historical_data.csv
 data/
+results/
+.vscode/
