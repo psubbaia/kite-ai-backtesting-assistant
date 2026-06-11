@@ -14,13 +14,13 @@ st.title("📈 StrategyLab MVP — AI-Guided NIFTY Backtester")
 
 st.write(
     "Enter a natural language strategy. "
-    "AI will parse the strategy, run an LLM preliminary backtest, "
-    "then Python will run a deterministic reference backtest."
+    "AI parses the strategy, LLM performs a preliminary calculation, "
+    "Python runs a deterministic reference backtest, and the system evaluates the result."
 )
 
 st.warning(
-    "This MVP is for historical backtesting only. "
-    "It does not provide live trading advice and does not place orders."
+    "Historical backtesting only. This app does not provide live trading advice "
+    "and does not place orders."
 )
 
 st.subheader("Supported MVP Strategies")
@@ -85,17 +85,21 @@ if run_button:
                 results["rows_used_for_mvp"]
             )
 
+        st.divider()
+
         st.subheader("LLM Preliminary Backtest Result")
         st.caption("This is AI preliminary calculation only, not the final verified result.")
         st.json(results["ai_preliminary_result"])
 
         st.subheader("Python Deterministic Backtest Summary")
-        st.caption("This is the deterministic reference result.")
+        st.caption("This is the deterministic source-of-truth result.")
         st.json(results["python_summary"])
 
         st.subheader("Evaluation Report")
         st.caption("This compares the LLM preliminary result with Python deterministic result.")
         st.json(results["evaluation_report"])
+
+        st.divider()
 
         st.subheader("Executed Trades")
 
@@ -121,11 +125,16 @@ if run_button:
             with c3:
                 st.metric("Total P&L", total_pnl)
 
-        st.subheader("Generated Reports")
+        st.divider()
 
+        st.subheader("AI Final Explanation")
+        st.caption("This explanation uses Python deterministic result as source of truth.")
+        st.json(results["ai_final_report"])
+
+        st.subheader("Generated Reports")
         st.json(results["report_paths"])
 
         st.info(
-            "MVP mode currently uses the first 10 rows after date filtering "
-            "for both LLM and Python so the comparison is fair."
+            "MVP mode uses the first 10 rows after date filtering for both LLM and Python. "
+            "This makes the comparison fair. Full-year Python backtesting can be added in V2."
         )

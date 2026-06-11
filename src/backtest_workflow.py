@@ -8,13 +8,12 @@ from src.backtest_engine import run_python_backtest
 from src.report_generator import save_trade_report
 from src.report_generator import save_json_report
 from src.evaluator import create_evaluation_report
+from src.ai_result_analyzer import generate_ai_final_report
 
 
 def run_strategylab_workflow(user_prompt):
-    # Step 1: AI parses the natural language strategy
     strategy_config = parse_strategy_prompt(user_prompt)
 
-    # Step 2: Validate allowed MVP strategy
     validation_result = validate_strategy_config(strategy_config)
 
     if not validation_result["is_valid"]:
@@ -28,7 +27,6 @@ def run_strategylab_workflow(user_prompt):
 
     strategy_config = validation_result["config"]
 
-    # Step 3: Load historical NIFTY data
     df = load_historical_data("data/nifty_day.csv")
 
     filtered_df = filter_data_by_date(
@@ -45,9 +43,7 @@ def run_strategylab_workflow(user_prompt):
             "strategy_config": strategy_config
         }
 
-    # MVP mode:
-    # Use the same 10 rows for both LLM and Python
-    # This makes Day 3 evaluation fair.
+    # MVP mode: same 10 rows for LLM and Python
     sample_df = filtered_df.head(10)
 
     historical_sample = prepare_sample_for_llm(
@@ -55,26 +51,27 @@ def run_strategylab_workflow(user_prompt):
         max_rows=10
     )
 
-    # Step 4: LLM preliminary backtest
     ai_preliminary_result = run_llm_preliminary_backtest(
         strategy_config,
         historical_sample
     )
 
-    # Step 5: Python deterministic backtest on the same 10 rows
     trades, python_summary = run_python_backtest(
         strategy_config,
         sample_df
     )
 
-    # Step 6: Evaluation layer
     evaluation_report = create_evaluation_report(
         ai_preliminary_result,
         python_summary
     )
 
-    # Step 7: Save reports with timestamped filenames
-    # This avoids Windows PermissionError when old CSV/JSON files are open.
+    ai_final_report = generate_ai_final_report(
+        strategy_config,
+        python_summary,
+        evaluation_report
+    )
+
     trade_report_path = save_trade_report(trades)
 
     summary_report_path = save_json_report(
@@ -92,6 +89,11 @@ def run_strategylab_workflow(user_prompt):
         report_name="evaluation_report"
     )
 
+    ai_final_report_path = save_json_report(
+        ai_final_report,
+        report_name="ai_final_report"
+    )
+
     return {
         "success": True,
         "strategy_config": strategy_config,
@@ -101,10 +103,12 @@ def run_strategylab_workflow(user_prompt):
         "python_summary": python_summary,
         "trades": trades,
         "evaluation_report": evaluation_report,
+        "ai_final_report": ai_final_report,
         "report_paths": {
             "trade_report": trade_report_path,
             "summary_report": summary_report_path,
             "ai_preliminary_report": ai_preliminary_report_path,
-            "evaluation_report": evaluation_report_path
+            "evaluation_report": evaluation_report_path,
+            "ai_final_report": ai_final_report_path
         }
     }
