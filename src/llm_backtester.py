@@ -21,36 +21,38 @@ def run_llm_preliminary_backtest(strategy_config, historical_sample):
     prompt = f"""
 You are a backtesting calculation assistant.
 
-You must perform a preliminary backtest using ONLY the historical data rows provided.
+You must perform a preliminary backtest calculation using only the provided historical rows.
 
-Important:
-- This is a preliminary LLM backtest.
-- Use only the provided rows.
-- Do not assume missing data.
-- Do not give live trading advice.
+Important rules:
+- Return ONLY valid JSON.
+- Do not include markdown.
+- Do not include explanation outside JSON.
+- Use the exact same field names as the Python deterministic backtest summary.
+- If a value cannot be calculated, use 0 or an empty string.
+- Do not give trading advice.
 - Do not say buy now or sell now.
 - Do not guarantee profit.
-- Return ONLY valid JSON.
 
-Strategy config:
+Strategy configuration:
 {json.dumps(strategy_config, indent=2)}
 
-Historical data rows:
+Historical sample rows:
 {json.dumps(historical_sample, indent=2)}
 
-Supported strategy logic:
+For strategy_type = "buy_open_sell_close":
+- entry_price = open
+- exit_price = close
+- pnl = (close - open) * quantity
+- result = "PROFIT" if pnl > 0 else "LOSS" if pnl < 0 else "BREAKEVEN"
 
-1. buy_open_sell_close:
-For each row:
-entry_price = open
-exit_price = close
-pnl = (exit_price - entry_price) * quantity
+Return JSON in this exact structure:
 
-Return JSON in this format:
 {{
-  "calculation_type": "AI_PRELIMINARY_BACKTEST",
-  "strategy_type": "...",
-  "rows_used": 0,
+  "strategy_type": "{strategy_config.get("strategy_type", "")}",
+  "symbol": "{strategy_config.get("symbol", "")}",
+  "from_date": "{strategy_config.get("from_date", "")}",
+  "to_date": "{strategy_config.get("to_date", "")}",
+  "quantity": {strategy_config.get("quantity", 0)},
   "total_trades": 0,
   "profit_trades": 0,
   "loss_trades": 0,
@@ -59,7 +61,8 @@ Return JSON in this format:
   "average_pnl": 0,
   "best_trade": 0,
   "worst_trade": 0,
-  "notes": "Preliminary LLM calculation only. Not final verified result."
+  "data_source": "LLM preliminary calculation on sample rows",
+  "calculation_type": "LLM_PRELIMINARY"
 }}
 """
 
@@ -73,4 +76,7 @@ Return JSON in this format:
     try:
         return json.loads(response_text)
     except json.JSONDecodeError:
-        raise ValueError("LLM did not return valid JSON. Response was: " + response_text)
+        raise ValueError(
+            "LLM preliminary backtest did not return valid JSON. Response was: "
+            + response_text
+        )
